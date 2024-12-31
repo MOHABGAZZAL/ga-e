@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة المجوهرات</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            color: #ff9800;
+        }
+        .game-container {
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 600px;
+        }
+        .question {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+        .answer {
+            margin: 10px;
+            padding: 10px;
+            background-color: #ddd;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .answer:hover {
+            background-color: #ccc;
+        }
+        .message {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+        .puzzle-container {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(4, 100px);
+            gap: 10px;
+            justify-content: center;
+        }
+        .puzzle-piece {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .name-input {
+            margin: 20px;
+            padding: 10px;
+            font-size: 18px;
+            width: 80%;
+            max-width: 300px;
+            border: 2px solid #ff9800;
+            border-radius: 5px;
+        }
+        .next-level {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .next-level:hover {
+            background-color: #45a049;
+        }
+        .show-full-image {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #2196f3;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .show-full-image:hover {
+            background-color: #1976d2;
+        }
+        .full-image {
+            margin-top: 20px;
+            display: none;
+            max-width: 100%;
+            max-height: 400px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container" id="intro">
+        <h1>مرحبا في لعبة المجوهرات</h1>
+        <p>أدخل اسمك للبدء في اللعبة:</p>
+        <input type="text" id="playerName" class="name-input" placeholder="اسمك هنا" />
+        <button onclick="startGame()" class="next-level">ابدأ اللعبة</button>
+    </div>
+
+    <div class="game-container" id="question-section" style="display: none;">
+        <h1 id="level-title">مستوى 1: الذهب</h1>
+        <p class="question" id="question-text"></p>
+        <div id="answers"></div>
+        <p class="message" id="message"></p>
+        <p>المجوهرات المكتسبة: <span id="jewels">0</span></p>
+        <button onclick="nextQuestion()" class="next-level" id="next-question-btn" style="display: none;">السؤال التالي</button>
+    </div>
+
+    <div class="game-container" id="puzzle-section" style="display: none;">
+        <h1>اللعبة البازل: تجميع الخاتم</h1>
+        <div class="puzzle-container" id="puzzle"></div>
+        <p class="message" id="puzzle-message"></p>
+        <button onclick="verifyPuzzle()" class="next-level" id="verify-puzzle-btn" style="display: none;">التحقق من البازل</button>
+        <button onmouseover="showFullImage()" onmouseout="hideFullImage()" class="show-full-image">عرض الصورة كاملة</button>
+        <img src="" id="full-image" class="full-image" />
+    </div>
+
+    <script>
+        let playerName = '';
+        let jewels = 0;
+        let currentLevel = 1;
+        let currentQuestionIndex = 0;
+        const levels = [
+            {
+                title: "الذهب",
+                questions: [
+                    { question: "ما هو عنصر الذهب؟", answers: ["Au", "Ag", "Fe"], correct: 0 },
+                    { question: "أي من هذه المعادن أغلى؟", answers: ["الذهب", "الفضة", "النحاس"], correct: 0 },
+                    { question: "كم نسبة الذهب في سبيكة ذهبية؟", answers: ["24 قيراط", "18 قيراط", "14 قيراط"], correct: 0 },
+                    { question: "أين يتم استخراج الذهب؟", answers: ["من المناجم", "من البحار", "من الصحاري"], correct: 0 },
+                    { question: "أي نوع من الذهب هو الأكثر استخداماً؟", answers: ["الذهب الأصفر", "الذهب الأبيض", "الذهب الوردي"], correct: 0 }
+                ],
+                puzzleImage: 'images/puzzles/ring.jpg'
+            },
+            {
+                title: "الأحجار الكريمة",
+                questions: [
+                    { question: "ما هو الحجر الكريم الأزرق؟", answers: ["الياقوت الأزرق", "الزمرد", "الماس"], correct: 0 },
+                    { question: "أي حجر كريم يستخدم في تصنيع الساعات الفاخرة؟", answers: ["الياقوت", "الماس", "الذهب"], correct: 1 },
+                    { question: "ما هو الحجر الأكثر شيوعًا؟", answers: ["الياقوت", "الألماس", "الزمرد"], correct: 0 },
+                    { question: "ما هو الحجر الذي يرتبط بالحب؟", answers: ["الروبي", "الزمرد", "الأوبال"], correct: 0 },
+                    { question: "ما هو الحجر الذي يُطلق عليه حجر الحكمة؟", answers: ["الزمرد", "الياقوت", "التورمالين"], correct: 0 }
+                ],
+                puzzleImage: 'images/puzzles/nick.jpg'
+            },
+            {
+                title: "الأشكال الهندسية",
+                questions: [
+                    { question: "أي شكل هندسي يستخدم في تصميم الخواتم؟", answers: ["الدائرة", "المربع", "المثلث"], correct: 0 },
+                    { question: "أي من هذه الأشكال يستخدم في تصميم الأساور؟", answers: ["الدائرة", "المستطيل", "الهرم"], correct: 0 },
+                    { question: "ما هو الشكل الهندسي الأكثر استخداماً في المجوهرات؟", answers: ["الدائرة", "المربع", "الخط المستقيم"], correct: 0 },
+                    { question: "أي شكل يستخدم في تصميم العقود؟", answers: ["البيضاوي", "المثلث", "المربع"], correct: 0 },
+                    { question: "ما هو الشكل الهندسي الذي يرمز إلى القوة؟", answers: ["المربع", "الدائرة", "المثلث"], correct: 2 }
+                ],
+                puzzleImage: 'images/puzzles/dimon.jpg'
+            },
+            {
+                title: "الفضة",
+                questions: [
+                    { question: "ما هو العنصر الذي يدخل في تصنيع الفضة؟", answers: ["النحاس", "الزنك", "الفضة"], correct: 2 },
+                    { question: "أي من هذه العناصر يُستخدم في تصفية الفضة؟", answers: ["النحاس", "الزنك", "الكبريت"], correct: 1 },
+                    { question: "أي من هذه المعادن أكثر لمعانًا؟", answers: ["الذهب", "الفضة", "الحديد"], correct: 1 },
+                    { question: "ما هو النوع الأكثر شيوعًا للفضة؟", answers: ["الفضة النقية", "الفضة الاسترلينية", "الفضة البرونزية"], correct: 1 },
+                    { question: "أي من هذه الدول تعد أكبر منتج للفضة؟", answers: ["المكسيك", "الولايات المتحدة", "الهند"], correct: 0 }
+                ],
+                puzzleImage: 'images/puzzles/sheape.jpg'
+            },
+            {
+                title: "الماس",
+                questions: [
+                    { question: "ما هو أكبر ماسة في العالم؟", answers: ["النجمة البيضاء", "الماسة الزرقاء", "ماسة كولينان"], correct: 2 },
+                    { question: "أي نوع من الماس هو الأكثر قيمة؟", answers: ["الماس الأصفر", "الماس الأبيض", "الماس الأزرق"], correct: 2 },
+                    { question: "ما هو المصدر الرئيسي للماس؟", answers: ["المناجم", "البحار", "الصحارى"], correct: 0 },
+                    { question: "أين تم اكتشاف أكبر ماسة؟", answers: ["جنوب أفريقيا", "الهند", "روسيا"], correct: 0 },
+                    { question: "ما هو حجم أكبر ماسة تم اكتشافها؟", answers: ["3106 قيراط", "500 قيراط", "1200 قيراط"], correct: 0 }
+                ],
+                puzzleImage: 'images/puzzles/all.jpg'
+            }
+        ];
+
+        let currentLevelData = levels[currentLevel - 1];
+        let puzzlePieces = [];
+
+        function startGame() {
+            playerName = document.getElementById('playerName').value;
+            if (!playerName) {
+                alert("يرجى إدخال اسمك");
+                return;
+            }
+            document.getElementById('intro').style.display = 'none';
+            document.getElementById('question-section').style.display = 'block';
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const questionData = currentLevelData.questions[currentQuestionIndex];
+            document.getElementById('question-text').textContent = questionData.question;
+            const answersDiv = document.getElementById('answers');
+            answersDiv.innerHTML = '';
+            questionData.answers.forEach((answer, index) => {
+                const button = document.createElement('button');
+                button.classList.add('answer');
+                button.textContent = answer;
+                button.onclick = () => checkAnswer(index);
+                answersDiv.appendChild(button);
+            });
+        }
+
+        function checkAnswer(selectedIndex) {
+            const questionData = currentLevelData.questions[currentQuestionIndex];
+            if (selectedIndex === questionData.correct) {
+                jewels += 5;
+                document.getElementById('jewels').textContent = jewels;
+                document.getElementById('message').textContent = "إجابة صحيحة!";
+            } else {
+                document.getElementById('message').textContent = "إجابة خاطئة. الإجابة الصحيحة هي: " + questionData.answers[questionData.correct];
+            }
+            currentQuestionIndex++;
+            if (currentQuestionIndex < currentLevelData.questions.length) {
+                document.getElementById('next-question-btn').style.display = 'inline-block';
+            } else {
+                showPuzzle();
+            }
+        }
+
+        function nextQuestion() {
+            document.getElementById('next-question-btn').style.display = 'none';
+            showQuestion();
+        }
+
+        function showPuzzle() {
+            document.getElementById('question-section').style.display = 'none';
+            document.getElementById('puzzle-section').style.display = 'block';
+            const puzzleContainer = document.getElementById('puzzle');
+            const piecesCount = 12;
+            puzzleContainer.innerHTML = '';
+            puzzlePieces = [];
+            for (let i = 0; i < piecesCount; i++) {
+                const piece = document.createElement('div');
+                piece.classList.add('puzzle-piece');
+                piece.style.backgroundImage = `url(${currentLevelData.puzzleImage})`;
+                piece.style.backgroundPosition = `${(i % 3) * -200}px ${(Math.floor(i / 3)) * -200}px`;
+                piece.setAttribute('data-index', i);
+                piece.setAttribute('draggable', 'true');
+                piece.addEventListener('dragstart', dragStart);
+                piece.addEventListener('dragover', dragOver);
+                piece.addEventListener('drop', dropPiece);
+                puzzleContainer.appendChild(piece);
+            }
+        }
+
+        function dragStart(e) {
+            e.dataTransfer.setData('text', e.target.getAttribute('data-index'));
+        }
+
+        function dragOver(e) {
+            e.preventDefault();
+        }
+
+        function dropPiece(e) {
+            const draggedIndex = e.dataTransfer.getData('text');
+            const targetIndex = e.target.getAttribute('data-index');
+            if (draggedIndex !== targetIndex) {
+                swapPuzzlePieces(draggedIndex, targetIndex);
+            }
+        }
+
+        function swapPuzzlePieces(draggedIndex, targetIndex) {
+            const draggedPiece = document.querySelector(`[data-index='${draggedIndex}']`);
+            const targetPiece = document.querySelector(`[data-index='${targetIndex}']`);
+            const tempBackgroundPosition = draggedPiece.style.backgroundPosition;
+            draggedPiece.style.backgroundPosition = targetPiece.style.backgroundPosition;
+            targetPiece.style.backgroundPosition = tempBackgroundPosition;
+        }
+
+        function verifyPuzzle() {
+            let isCorrect = true;
+            puzzlePieces.forEach((piece, index) => {
+                if (piece.style.backgroundPosition !== `${(index % 3) * -200}px ${(Math.floor(index / 3)) * -200}px`) {
+                    isCorrect = false;
+                    piece.classList.add('incorrect');
+                }
+            });
+            if (isCorrect) {
+                alert("أحسنت! تم التحقق من البازل بنجاح!");
+                nextLevel();
+            } else {
+                alert("البازل غير صحيح. حاول مجددًا!");
+            }
+        }
+
+        function nextLevel() {
+            currentLevel++;
+            if (currentLevel <= levels.length) {
+                currentLevelData = levels[currentLevel - 1];
+                currentQuestionIndex = 0;
+                showQuestion();
+                document.getElementById('puzzle-section').style.display = 'none';
+                document.getElementById('question-section').style.display = 'block';
+            } else {
+                alert(`تهانينا يا ${playerName}! أكملت جميع المستويات.`);
+            }
+        }
+
+        function showFullImage() {
+            const fullImage = document.getElementById('full-image');
+            fullImage.src = currentLevelData.puzzleImage;
+            fullImage.style.display = 'block';
+        }
+
+        function hideFullImage() {
+            const fullImage = document.getElementById('full-image');
+            fullImage.style.display = 'none';
+        }
+    </script>
+
+</body>
+</html>
